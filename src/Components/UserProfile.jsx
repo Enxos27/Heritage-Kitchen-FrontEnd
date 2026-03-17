@@ -18,7 +18,7 @@ const UserProfile = () => {
   const [isFollowed, setIsFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Recuperiamo l'utente loggato dal localStorage per il controllo "me stesso"
+  // Recupero l'utente loggato dal localStorage per il controllo "me stesso"
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isMe = currentUser?.id === userId;
 
@@ -30,7 +30,7 @@ const UserProfile = () => {
       setUserData(data);
       setIsFollowed(data.isFollowedByMe); // Stato persistente dal Backend
       
-      // Protezione NaN: mappiamo i nomi esatti dal DTO Java
+      // Protezione NaN: mappo i nomi esatti dal DTO Java
       setStats({
         followers: data.stats.followersCount || 0,
         following: data.stats.followingCount || 0,
@@ -49,6 +49,7 @@ const UserProfile = () => {
 
   useEffect(() => {
     fetchProfileData();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const handleFollow = async () => {
@@ -59,11 +60,13 @@ const UserProfile = () => {
       const newFollowState = !isFollowed;
       setIsFollowed(newFollowState);
       
+      // Aggiorno i contatori in base alla nuova relazione
       setStats(prev => ({
         ...prev,
         followers: newFollowState ? prev.followers + 1 : prev.followers - 1
       }));
 
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
       notifications.show({ message: "Errore durante l'operazione", color: "red" });
     }
@@ -104,7 +107,7 @@ const UserProfile = () => {
               </Stack>
             </Group>
 
-            {/* Mostriamo il tasto Segui solo se NON è il mio profilo */}
+            {/* Mostro il tasto Segui solo se NON è il mio profilo */}
             {!isMe && (
               <Button 
                 fullWidth size="md" radius="md"

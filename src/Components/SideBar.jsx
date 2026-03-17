@@ -6,9 +6,11 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Recupero l'utente loggato dal localStorage in modo sicuro, gestendo il caso in cui sia "undefined"
   const userRaw = localStorage.getItem('user');
   const user = userRaw && userRaw !== "undefined" ? JSON.parse(userRaw) : null;
 
+  // Definizione dei menu con icone, etichette e percorsi
   const menuItems = [
     { icon: Home, label: 'Home', path: '/' },
     { icon: Search, label: 'Cerca', path: '/search' },

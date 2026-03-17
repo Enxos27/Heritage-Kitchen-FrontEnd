@@ -21,7 +21,6 @@ const SearchPage = () => {
 
       setLoading(true);
       try {
-        // Supponendo che il tuo controller esponga GET /recipes/search?query=...
         const response = await api.get(`/recipes/search?titolo=${query}`);
         setResults(response.data);
       } catch (error) {
@@ -31,7 +30,7 @@ const SearchPage = () => {
       }
     };
 
-    // Debounce di 500ms per non sovraccaricare il server
+    // Eseguo la ricerca solo dopo che l'utente ha smesso di digitare per mezzo secondo per non sovraccaricare il server con richieste ad ogni tasto premuto
     const timeoutId = setTimeout(() => {
       searchRecipes();
     }, 500);

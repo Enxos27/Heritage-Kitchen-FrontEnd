@@ -14,9 +14,14 @@ const CreateRecipe = () => {
   const [loading, setLoading] = useState(false);
 
   // Identifichiamo la modalità (Modifica o Variante)
+  // editRecipe: se presente, indica che stiamo modificando una ricetta esistente e contiene i dati della ricetta da modificare
+  // original: se presente senza editRecipe, indica che stiamo creando una variante e contiene i dati della ricetta originale da cui partire
+  // parentId: se presente senza editRecipe, indica che stiamo creando una variante e contiene l'id della ricetta originale da cui partire
+  // isEditing: boolean che indica se siamo in modalità modifica (true) o creazione (false)
   const editRecipe = location.state?.editRecipe || null;
   const original = location.state?.originalRecipe || null;
   const parentId = location.state?.parentId || null;
+  // usiamo i due punti esclamativi per forzare la conversione in booleano, in modo che isEditing sia true solo se editRecipe è un oggetto valido e non null o undefined
   const isEditing = !!editRecipe;
 
   const [formData, setFormData] = useState({
@@ -35,6 +40,7 @@ const CreateRecipe = () => {
 
   // Popolamento automatico campi
   useEffect(() => {
+    // La logica è: se siamo in modifica, prendo i dati da editRecipe, altrimenti se stiamo creando una variante prendo i dati da original. Se nessuno dei due è presente (creazione da zero), lascio i campi vuoti o con valori di default.
     const source = editRecipe || original;
     if (source) {
       setFormData({
@@ -79,6 +85,7 @@ const CreateRecipe = () => {
         color: 'green' 
       });
       navigate(`/recipes/${recipeId}`);
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
       notifications.show({ title: 'Errore', message: 'Controlla i dati inseriti', color: 'red' });
     } finally {

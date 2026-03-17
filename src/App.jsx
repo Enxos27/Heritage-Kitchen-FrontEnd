@@ -17,6 +17,7 @@ function App() {
   const isAuthPage = ['/login', '/register'].includes(location.pathname);
 
   return (
+    // AppShell è un componente di layout di Mantine che ci permette di creare una struttura con navbar, footer e main content in modo semplice e reattivo. Qui lo usiamo per mostrare la sidebar solo su desktop e la mobile navbar solo su mobile, nascondendole entrambe nelle pagine di login e registrazione.
     <AppShell
       navbar={{
         width: 250,
@@ -43,6 +44,7 @@ function App() {
         </AppShell.Footer>
       )}
 
+         {/* AppShell.Main è la sezione principale del layout dove vengono renderizzate le pagine in base alle rotte definite. Qui usiamo React Router per definire le rotte e i componenti corrispondenti per ogni pagina. */}
       <AppShell.Main>
         <Routes>
           <Route path="/" element={<Home />} />

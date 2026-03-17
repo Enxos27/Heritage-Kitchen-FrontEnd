@@ -29,6 +29,7 @@ const ProfilePage = () => {
     if (currentUser) {
       fetchData();
     }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {

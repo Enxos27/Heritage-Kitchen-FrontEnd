@@ -50,7 +50,6 @@ const Login = () => {
 
       <Paper withBorder shadow="md" p={30} mt={30} radius="md">
         <form onSubmit={form.onSubmit(handleSubmit)}>
-          {/* Campo cambiato da Email a Username */}
           <TextInput 
             label="Username" 
             placeholder="Il tuo username" 

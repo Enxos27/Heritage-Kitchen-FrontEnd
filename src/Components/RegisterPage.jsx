@@ -11,8 +11,10 @@ const Register = () => {
 
   const handleSubmit = async (values) => {
     try {
-      // Nota: assicurati che la porta sia 8080 come il tuo Spring Boot
+    // Invio i dati al backend usando axios direttamente, senza passare dall'istanza api per evitare confusione con il token che non serve alla registrazione
+    // axios è un client HTTP che ci permette di fare richieste al backend, funziona in modo simile a fetch ma con una sintassi più pulita e alcune funzionalità aggiuntive come l'intercettazione delle richieste e risposte, gestione automatica dei JSON, ecc.
       await axios.post('http://localhost:8080/user/register', values);
+      // notifications è una libreria di Mantine che ci permette di mostrare messaggi di notifica all'utente in modo semplice e personalizzabile. Qui la usiamo per mostrare un messaggio di successo dopo la registrazione e poi reindirizzare l'utente alla pagina di login.
       notifications.show({ title: 'Ottimo!', message: 'Account creato, ora accedi.', color: 'green' });
       navigate('/login');
     // eslint-disable-next-line no-unused-vars

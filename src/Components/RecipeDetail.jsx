@@ -25,11 +25,13 @@ const RecipeDetail = () => {
 
   useEffect(() => {
     fetchRecipe();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchRecipe = async () => {
     try {
       const response = await api.get(`/recipes/${id}`);
+      // salvo in stato sia la ricetta che lo stato di like e follow per gestire i bottoni in modo reattivo
       const { recipe: recipeData, isLiked: likedStatus, isFollowingAuthor } = response.data;
       
       setRecipe(recipeData);
@@ -54,9 +56,10 @@ const RecipeDetail = () => {
       const response = await api.patch(`/recipes/${id}/image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      // Aggiorniamo lo stato locale con la nuova ricetta che contiene l'URL aggiornato
+      // Aggiorno lo stato locale con la nuova ricetta che contiene l'URL aggiornato
       setRecipe(response.data);
       notifications.show({ message: 'Immagine aggiornata!', color: 'green' });
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       notifications.show({ title: 'Errore', message: 'Impossibile caricare l\'immagine', color: 'red' });
     } finally {
@@ -68,6 +71,7 @@ const RecipeDetail = () => {
     try {
       await api.post(`/likes/recipe/${id}`);
       setIsLiked(!isLiked);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       notifications.show({ message: 'Errore durante l\'azione', color: 'red' });
     }
@@ -77,6 +81,7 @@ const RecipeDetail = () => {
     try {
       await api.post(`/social/follow/${recipe.user.id}`);
       setIsFollowing(!isFollowing);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       notifications.show({ message: 'Impossibile seguire lo chef', color: 'red' });
     }
@@ -88,6 +93,7 @@ const RecipeDetail = () => {
         await api.delete(`/recipes/${id}`);
         notifications.show({ title: 'Eliminata', message: 'Ricetta rimossa', color: 'green' });
         navigate('/');
+      // eslint-disable-next-line no-unused-vars
       } catch (err) {
         notifications.show({ title: 'Errore', message: 'Non autorizzato', color: 'red' });
       }

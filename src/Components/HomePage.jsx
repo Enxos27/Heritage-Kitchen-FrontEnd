@@ -30,6 +30,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return <Center h="80vh"><Loader color="orange" size="xl" /></Center>;
