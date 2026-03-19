@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { 
-  Container, Text, Title, Avatar, Group, Stack, Tabs, SimpleGrid, 
-  Paper, Badge, Loader, Center, Box, Divider, ActionIcon, Button, 
-  Modal, Textarea, FileInput 
+  Container, Paper, Group, Box, Avatar, ActionIcon, Stack, Title, Text, 
+  Button, Tabs, SimpleGrid, Badge, Modal, FileInput, Textarea, Divider, Center, Loader, UnstyledButton, Progress
 } from '@mantine/core';
-import { Utensils, Heart, GitFork, Settings, Camera, Save, Trash } from 'lucide-react';
+import { Camera, Settings, Utensils, Heart, Save, Trash, ChevronRight, Award } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
@@ -140,113 +139,192 @@ const handleDeleteAccount = async () => {
   }
 };
 
+// DETERMINAZIONE LIVELLO CHEF: In base al numero di ricette pubblicate, assegna un livello e mostra una barra di progresso verso il livello successivo.
+const getChefLevel = (count) => {
+  if (count >= 20) return { label: 'Maestro Heritage', color: 'red', next: 50, min: 20 };
+  if (count >= 10) return { label: 'Capocuoco', color: 'orange', next: 20, min: 10 };
+  if (count >= 5)  return { label: 'Chef di Linea', color: 'blue', next: 10, min: 5 };
+  return { label: 'Apprendista', color: 'gray', next: 5, min: 0 };
+};
+
   if (loading) return <Center h="80vh"><Loader color="orange" size="xl" /></Center>;
 
-  return (
-    <Container size="lg" pt={40} pb={100}>
-      
-      {/* HEADER PROFILO */}
-      <Paper p="xl" radius="md" withBorder mb="xl" bg="white">
-        <Group justify="space-between" align="flex-start">
-          <Group gap="xl">
-            <Box pos="relative">
-              <Avatar src={profileData?.avatar} size={120} radius={120} color="orange" shadow="md">
-                {profileData?.username?.charAt(0)}
-              </Avatar>
-              <ActionIcon 
-                pos="absolute" bottom={5} right={5} 
-                variant="filled" color="orange" radius="xl" size="lg"
-                onClick={open}
-              >
-                <Camera size={16} />
-              </ActionIcon>
-            </Box>
+  // 1. Calcola il numero di ricette (assicurati che sia un numero)
+const recipesCount = profileData?.stats?.recipesCount ?? 0;
+
+// 2. Ottieni i dati del livello attuale
+const currentLevel = getChefLevel(recipesCount);
+
+// 3. Ottieni i dati del livello SUCCESSIVO (passando l'obiettivo del livello attuale)
+const nextLevelData = getChefLevel(currentLevel.next);
+
+// 4. Calcola la percentuale
+const progressPercent = ((recipesCount - currentLevel.min) / (currentLevel.next - currentLevel.min)) * 100;
+return (
+  <Container size="lg" pt={40} pb={100}>
+    
+    {/* HEADER PROFILO: Stile Hero */}
+    <Box mb={50}>
+      <Group justify="space-between" align="flex-end" wrap="nowrap">
+        <Group gap="xl" align="center">
+          <Box pos="relative">
+            <Avatar 
+              src={profileData?.avatar} 
+              size={150} 
+              radius={150} 
+              color="orange" 
+              style={{ border: '4px solid white', boxShadow: 'var(--mantine-shadow-md)' }}
+            >
+              {profileData?.username?.charAt(0)}
+            </Avatar>
+            <ActionIcon 
+              pos="absolute" bottom={10} right={10} 
+              variant="filled" color="orange" radius="xl" size="xl"
+              onClick={open}
+              style={{ boxShadow: 'var(--mantine-shadow-xs)' }}
+            >
+              <Camera size={20} />
+            </ActionIcon>
+          </Box>
+          
+          <Stack gap={5}>
+            <Group gap="xs">
+              <Title order={1} fw={900} lts={-1.5} size="34px">
+                {profileData?.username || currentUser?.username}
+              </Title>
+              {/* BADGE DINAMICO DEL LIVELLO */}
+              <Badge variant="filled" color={currentLevel.color} leftSection={<Award size={12} />}>
+                {currentLevel.label}
+              </Badge>
+            </Group>
             
-            <Stack gap="xs">
-              <Title order={1}>{profileData?.username || currentUser?.username}</Title>
-              <Text c="dimmed" size="sm" style={{ maxWidth: '400px' }}>
-                {profileData?.bio || "Nessuna biografia inserita."}
-              </Text>
-              
-              <Group gap="xl" mt="md">
-                <StatItem label="Ricette" value={profileData?.stats?.recipesCount ?? 0} />
-                <StatItem label="Followers" value={profileData?.stats?.followersCount ?? 0} />
-                <StatItem label="Seguiti" value={profileData?.stats?.followingCount ?? 0} />
-              </Group>
-            </Stack>
-          </Group>
-          <Button variant="light" color="gray" leftSection={<Settings size={16} />} onClick={open}>
-            Modifica
-          </Button>
+            <Text c="gray.6" size="md" style={{ maxWidth: '450px', lineHeight: 1.5, fontStyle: 'italic' }}>
+              {profileData?.bio || "Racconta la tua storia culinaria nelle impostazioni..."}
+            </Text>
+            
+            <Group gap={30} mt="lg">
+              <StatItem label="Ricette" value={recipesCount} />
+              <Divider orientation="vertical" />
+              <StatItem label="Followers" value={profileData?.stats?.followersCount ?? 0} />
+              <Divider orientation="vertical" />
+              <StatItem label="Seguiti" value={profileData?.stats?.followingCount ?? 0} />
+            </Group>
+
+            {/* PROGRESS BAR PRIVATA: Motivazione per lo Chef */}
+            <Box mt="xl" p="md" style={{ backgroundColor: '#f8f9fa', borderRadius: '12px', width: '100%', border: '1px solid #eee' }}>
+  <Group justify="space-between" mb={8}>
+    <Text size="xs" fw={700} tt="uppercase" c="dimmed">
+      {recipesCount === 0 
+        ? "Pronto a iniziare?" 
+        : <>Prossimo Obiettivo: <Text span c="orange" fw={900}>{nextLevelData.label}</Text></>
+      }
+    </Text>
+    <Text size="xs" fw={800}>{recipesCount} / {currentLevel.next} Ricette</Text>
+  </Group>
+
+  <Progress 
+    value={recipesCount === 0 ? 0 : progressPercent} 
+    color="orange" 
+    size="sm" 
+    radius="xl" 
+    striped 
+    animated={recipesCount > 0} 
+  />
+
+  <Text size="11px" c="orange.8" mt={8} fw={600} italic ta="center">
+    {recipesCount === 0 
+      ? "✨ Inizia la tua avventura culinaria pubblicando la prima ricetta!" 
+      : recipesCount >= 20 
+        ? "🏆 Sei un Maestro Heritage, la tua leggenda continua!" 
+        : `Ti mancano ${currentLevel.next - recipesCount} ricette per diventare ${nextLevelData.label}`
+    }
+  </Text>
+</Box>
+          </Stack>
         </Group>
-      </Paper>
 
-      {/* TABS */}
-      <Tabs color="orange" defaultValue="my-recipes" variant="pills">
-        <Tabs.List mb="xl" grow>
-          <Tabs.Tab value="my-recipes" leftSection={<Utensils size={18} />}>Le mie Ricette</Tabs.Tab>
-          <Tabs.Tab value="liked" leftSection={<Heart size={18} />}>I miei Preferiti</Tabs.Tab>
-        </Tabs.List>
+        <Button 
+          variant="subtle" 
+          color="gray" 
+          leftSection={<Settings size={18} />} 
+          onClick={open}
+          radius="md"
+          visibleFrom="sm"
+        >
+          Impostazioni
+        </Button>
+      </Group>
+    </Box>
 
-        <Tabs.Panel value="my-recipes">
-          <RecipeGrid recipes={myRecipes} navigate={navigate} emptyMsg="Non hai ancora creato nessuna ricetta." />
-        </Tabs.Panel>
+    {/* SEZIONE CONTENUTI */}
+    <Tabs color="orange" defaultValue="my-recipes" variant="pills" radius="xl">
+      <Tabs.List mb={30} style={{ borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
+        <Tabs.Tab value="my-recipes" leftSection={<Utensils size={18} />} px="xl">
+          Il mio Ricettario
+        </Tabs.Tab>
+        <Tabs.Tab value="liked" leftSection={<Heart size={18} />} px="xl">
+          Preferiti
+        </Tabs.Tab>
+      </Tabs.List>
 
-        <Tabs.Panel value="liked">
-          <RecipeGrid recipes={likedRecipes} navigate={navigate} emptyMsg="Non hai ancora messo mi piace a nessuna ricetta." />
-        </Tabs.Panel>
-      </Tabs>
+      <Tabs.Panel value="my-recipes">
+        <RecipeGrid recipes={myRecipes} navigate={navigate} emptyMsg="Il tuo ricettario è ancora vuoto." isOwner={true} />
+      </Tabs.Panel>
 
-      {/* MODAL EDIT */}
-      <Modal opened={opened} onClose={close} title="Impostazioni Profilo" centered radius="md">
-        <Stack gap="md">
-          <FileInput 
-            label="Cambia Foto Profilo" 
-            placeholder="Seleziona un'immagine" 
-            accept="image/*"
-            leftSection={<Camera size={16} />}
-            onChange={setNewAvatar}
-          />
-          {newAvatar && (
-            <Button size="xs" color="orange" onClick={handleUpdateAvatar} loading={uploading} variant="light">
-              Conferma Upload Foto
-            </Button>
-          )}
-          
-          <Divider my="sm" label="Bio" labelPosition="center" />
-          
+      <Tabs.Panel value="liked">
+        <RecipeGrid recipes={likedRecipes} navigate={navigate} emptyMsg="Non hai ancora salvato ricette altrui." />
+      </Tabs.Panel>
+    </Tabs>
+
+    {/* MODAL EDIT */}
+    <Modal opened={opened} onClose={close} title={<Text fw={700}>Gestisci Profilo</Text>} centered radius="lg" size="md" padding="xl">
+      <Stack gap="xl">
+        <Box>
+           <Text size="sm" fw={600} mb={10}>Identità Visiva</Text>
+           <FileInput 
+              placeholder="Carica nuova foto..." 
+              accept="image/*"
+              leftSection={<Camera size={16} />}
+              onChange={setNewAvatar}
+              variant="filled"
+            />
+            {newAvatar && (
+              <Button fullWidth mt="xs" color="orange" onClick={handleUpdateAvatar} loading={uploading} size="xs">
+                Applica nuova immagine
+              </Button>
+            )}
+        </Box>
+        
+        <Box>
+          <Text size="sm" fw={600} mb={10}>Biografia</Text>
           <Textarea 
-            label="Racconta chi sei" 
-            placeholder="La tua biografia..."
+            placeholder="Scrivi qualcosa sulla tua passione per la cucina..."
             value={newBio}
             onChange={(e) => setNewBio(e.currentTarget.value)}
-            minRows={3}
+            minRows={4}
+            variant="filled"
           />
-          
-          <Button fullWidth color="orange" leftSection={<Save size={18} />} onClick={handleUpdateBio}>
-            Salva Informazioni
-          </Button>
-          {/* SEZIONE PERICOLO */}
-    <Divider my="md" label="Zona Pericolo" labelPosition="center" color="red" />
-    
-    <Paper withBorder p="md" style={{ borderColor: 'var(--mantine-color-red-2)', backgroundColor: 'var(--mantine-color-red-0)' }}>
-      <Text size="xs" c="red" mb="sm" fw={500}>
-        L'eliminazione dell'account rimuoverà permanentemente tutte le tue ricette e i tuoi dati.
-      </Text>
-      <Button 
-        fullWidth 
-        variant="outline" 
-        color="red" 
-        leftSection={<Trash size={16} />} 
-        onClick={handleDeleteAccount}
-      >
-        Elimina Account
-      </Button>
-    </Paper>
-        </Stack>
-      </Modal>
-    </Container>
-  );
+        </Box>
+        
+        <Button fullWidth color="orange" size="md" radius="md" onClick={handleUpdateBio} leftSection={<Save size={18} />}>
+          Salva modifiche
+        </Button>
+
+        <Divider label="Sicurezza" labelPosition="center" />
+        
+        <UnstyledButton onClick={handleDeleteAccount} style={{ width: '100%' }}>
+          <Group justify="space-between" p="md" style={{ borderRadius: '8px', border: '1px solid #fee2e2' }} bg="red.0">
+            <Group gap="xs">
+              <Trash size={18} color="var(--mantine-color-red-6)" />
+              <Text size="sm" c="red.7" fw={600}>Elimina Account</Text>
+            </Group>
+            <ChevronRight size={16} color="var(--mantine-color-red-4)" />
+          </Group>
+        </UnstyledButton>
+      </Stack>
+    </Modal>
+  </Container>
+);
 };
 
 // Componenti Helper

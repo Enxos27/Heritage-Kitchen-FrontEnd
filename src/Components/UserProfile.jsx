@@ -5,17 +5,25 @@ import {
   Group, Button, Divider, SimpleGrid, Card, Image, 
   Loader, Center, Paper, Box, Badge 
 } from '@mantine/core';
-import { UserPlus, UserCheck, ArrowLeft, GitFork } from 'lucide-react'; // Aggiunto GitFork
+import { 
+  UserPlus, UserCheck, ArrowLeft, GitFork, Quote, 
+  ChefHat, BookOpen, Clock, Award 
+} from 'lucide-react';
 import { notifications } from '@mantine/notifications';
 import api from '../Service/api';
+
+// Helper per la logica dei livelli (Grado pubblico)
+const getChefLevel = (count) => {
+  if (count >= 20) return { label: 'Maestro Heritage', color: 'red', next: 50, min: 20 };
+  if (count >= 10) return { label: 'Capocuoco', color: 'orange', next: 20, min: 10 };
+  if (count >= 5)  return { label: 'Chef di Linea', color: 'blue', next: 10, min: 5 };
+  return { label: 'Apprendista', color: 'gray', next: 5, min: 0 };
+};
 
 const UserProfile = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
-  // userData contiene le informazioni di base dell'utente (username, avatar, bio), 
-  // recipes è la lista delle ricette pubblicate dall'utente, 
-  // stats contiene i numeri di follower, seguiti e ricette, 
-  // isFollowed indica se l'utente corrente segue questo profilo e loading gestisce lo stato di caricamento dei dati.
+  
   const [userData, setUserData] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [stats, setStats] = useState({ followers: 0, following: 0, recipesCount: 0 });
@@ -23,11 +31,8 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  // userId dagli useParams è spesso una stringa, currentUser.id può essere numero o stringa
-  // Usiamo == per evitare problemi di tipo o forziamo a stringa
   const isMe = String(currentUser?.id) === String(userId);
 
-  // Funzione per caricare i dati del profilo utente. Fa una chiamata al server per ottenere le informazioni dell'utente, i suoi follower, seguiti e ricette. Aggiorna lo stato con i dati ricevuti e gestisce eventuali errori mostrando una notifica. Al termine, imposta loading a false per indicare che i dati sono stati caricati.
   const fetchProfileData = async () => {
     try {
       const profileRes = await api.get(`/user/${userId}/profile`);
@@ -57,7 +62,6 @@ const UserProfile = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // Funzione per gestire il click sul pulsante di follow/unfollow. Invia una richiesta al server per seguire o smettere di seguire l'utente, poi aggiorna lo stato di follow e i contatori dei follower di conseguenza. Mostra una notifica di successo o errore a seconda dell'esito dell'operazione.
   const handleFollow = async () => {
     try {
       await api.post(`/social/follow/${userId}`);
@@ -76,101 +80,171 @@ const UserProfile = () => {
 
   if (loading) return <Center h="80vh"><Loader color="orange" size="xl" /></Center>;
 
+  // Calcolo del grado attuale basato sulle ricette
+  const currentLevel = getChefLevel(stats.recipesCount);
+
   return (
     <Container size="lg" pt={80} pb={100}>
-      <Button variant="subtle" color="gray" leftSection={<ArrowLeft size={18} />} mb="xl" onClick={() => navigate(-1)}>
+      <Button 
+        variant="subtle" 
+        color="gray" 
+        leftSection={<ArrowLeft size={18} />} 
+        mb="xl" 
+        onClick={() => navigate(-1)}
+        radius="xl"
+      >
         Torna indietro
       </Button>
 
-      <Grid gutter={40}>
+      <Grid gutter={50}>
+        {/* COLONNA SINISTRA: INFO CHEF */}
         <Grid.Col span={{ base: 12, md: 4 }}>
-          <Paper withBorder p="xl" radius="md" shadow="xs">
-            <Avatar src={userData?.avatar} size={120} radius={120} mx="auto" color="orange">
-              {userData?.username?.charAt(0).toUpperCase()}
-            </Avatar>
+          <Box style={{ position: 'sticky', top: 100 }}>
             
-            <Title order={2} mt="md" ta="center" fw={800}>{userData?.username}</Title>
-            <Text c="dimmed" size="sm" ta="center" mb="xl">Chef della Community</Text>
+            {/* AVATAR & HEADER */}
+            <Stack align="center" gap="xs" mb="xl">
+              <Avatar 
+                src={userData?.avatar} 
+                size={120} 
+                radius={120} 
+                color="orange"
+                shadow="md"
+                style={{ border: '3px solid white' }}
+              >
+                {userData?.username?.charAt(0).toUpperCase()}
+              </Avatar>
+              
+              <Box ta="center">
+                <Title order={2} fw={900} lts={-1} mb={4}>{userData?.username}</Title>
+                
+                {/* BADGE GRADO PUBBLICO */}
+                <Group gap={5} justify="center">
+                  <Badge 
+                    variant="filled" 
+                    color={currentLevel.color} 
+                    leftSection={<Award size={12} />}
+                    size="sm"
+                  >
+                    {currentLevel.label}
+                  </Badge>
+                  <Divider orientation="vertical" />
+                  <Group gap={4}>
+                    <ChefHat size={14} color="gray" />
+                    <Text c="dimmed" size="xs" fw={700} tt="uppercase">Chef</Text>
+                  </Group>
+                </Group>
+              </Box>
+            </Stack>
 
-            <Group justify="center" mb="xl">
+            {/* CONTATORI MINIMAL */}
+            <Group justify="center" gap={30} mb="xl" py="md" style={{ borderTop: '1px solid #eee', borderBottom: '1px solid #eee' }}>
               <Stack gap={0} align="center">
-                <Text fw={700} size="lg">{stats.recipesCount}</Text>
-                <Text size="xs" c="dimmed" tt="uppercase">Ricette</Text>
+                <Text fw={800} size="xl" c="orange">{stats.recipesCount}</Text>
+                <Text size="xs" c="dimmed" fw={600} tt="uppercase">Ricette</Text>
               </Stack>
-              <Divider orientation="vertical" />
               <Stack gap={0} align="center">
-                <Text fw={700} size="lg">{stats.followers}</Text>
-                <Text size="xs" c="dimmed" tt="uppercase">Follower</Text>
+                <Text fw={800} size="xl">{stats.followers}</Text>
+                <Text size="xs" c="dimmed" fw={600} tt="uppercase">Follower</Text>
               </Stack>
-              <Divider orientation="vertical" />
               <Stack gap={0} align="center">
-                <Text fw={700} size="lg">{stats.following}</Text>
-                <Text size="xs" c="dimmed" tt="uppercase">Seguiti</Text>
+                <Text fw={800} size="xl">{stats.following}</Text>
+                <Text size="xs" c="dimmed" fw={600} tt="uppercase">Seguiti</Text>
               </Stack>
             </Group>
 
-            {!isMe && (
-              <Button 
-                fullWidth size="md" radius="md"
-                color={isFollowed ? "gray" : "orange"}
-                variant={isFollowed ? "outline" : "filled"}
-                leftSection={isFollowed ? <UserCheck size={18} /> : <UserPlus size={18} />}
-                onClick={handleFollow}
-              >
-                {isFollowed ? "Seguito" : "Segui"}
-              </Button>
-            )}
-
+            {/* BIO FILOSOFICA */}
             {userData?.bio && (
-              <Box mt="xl">
-                <Text fw={600} size="sm" mb={5}>Bio</Text>
-                <Text size="sm" c="dimmed">{userData.bio}</Text>
+              <Box mb="xl" px="sm">
+                <Group gap={8} mb={10}>
+                  <Quote size={18} color="orange" fill="rgba(255, 145, 0, 0.1)" />
+                  <Text fw={800} size="sm">Bio</Text>
+                </Group>
+                <Text 
+                  size="sm" 
+                  c="gray.7" 
+                  style={{ lineHeight: 1.7, fontStyle: 'italic', borderLeft: '3px solid #ffd8a8', paddingLeft: '12px' }}
+                >
+                  {userData.bio}
+                </Text>
               </Box>
             )}
-          </Paper>
+
+            {!isMe && (
+              <Button 
+                fullWidth size="lg" radius="md"
+                color={isFollowed ? "gray.2" : "orange"}
+                c={isFollowed ? "black" : "white"}
+                variant={isFollowed ? "filled" : "filled"}
+                leftSection={isFollowed ? <UserCheck size={20} /> : <UserPlus size={20} />}
+                onClick={handleFollow}
+                fw={700}
+              >
+                {isFollowed ? "Seguito" : "Segui Chef"}
+              </Button>
+            )}
+          </Box>
         </Grid.Col>
 
+        {/* COLONNA DESTRA: FEED RICETTE */}
         <Grid.Col span={{ base: 12, md: 8 }}>
-          <Title order={3} mb="lg">Le ricette di {userData?.username}</Title>
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+          <Group mb="xl" justify="space-between" align="center">
+            <Group gap="sm">
+              <BookOpen size={24} color="orange" />
+              <Title order={3} fw={900} lts={-0.5}>Ricettario</Title>
+            </Group>
+            <Badge variant="light" color="gray" size="lg" radius="sm">
+              {recipes.length} Creazioni
+            </Badge>
+          </Group>
+
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xl">
             {recipes.map((recipe) => (
               <Card 
                 key={recipe.id} 
                 withBorder 
-                padding="lg" 
-                radius="md" 
+                padding={0} 
+                radius="lg" 
+                shadow="xs"
                 onClick={() => navigate(`/recipes/${recipe.id}`)} 
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', transition: 'all 0.3s ease', overflow: 'hidden' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
-                <Card.Section pos="relative"> {/* Aggiunto pos="relative" */}
-                  <Image src={recipe.imageURL || recipe.imageUrl || "https://placehold.co/600x400"} height={180} />
-                  
-                  {/* BADGE VARIANTE */}
+                <Card.Section pos="relative">
+                  <Image src={recipe.imageURL || "https://placehold.co/600x400"} height={220} />
                   {recipe.parentRecipe && (
                     <Badge 
-                      pos="absolute" 
-                      top={10} 
-                      right={10} 
-                      color="teal" 
-                      variant="filled" 
+                      pos="absolute" top={15} right={15} 
+                      color="teal.6" variant="filled" 
                       leftSection={<GitFork size={12}/>}
+                      shadow="sm"
                     >
                       Variante
                     </Badge>
                   )}
                 </Card.Section>
                 
-                <Text fw={700} mt="md" className="line-clamp-1">{recipe.titolo}</Text>
-                <Group justify="space-between" mt="xs">
-                  <Badge variant="light" color="orange">{recipe.difficolta}</Badge>
-                  <Text size="xs" c="dimmed">{recipe.tempoPrep} min</Text>
-                </Group>
+                <Box p="lg">
+                  <Text fw={800} size="lg" mb={8} className="line-clamp-1">{recipe.titolo}</Text>
+                  <Divider mb="md" variant="dashed" />
+                  <Group justify="space-between">
+                    <Badge variant="dot" color="orange">{recipe.difficolta}</Badge>
+                    <Group gap={4}>
+                      <Clock size={14} color="gray" />
+                      <Text size="xs" c="dimmed" fw={700}>{recipe.tempoPrep} min</Text>
+                    </Group>
+                  </Group>
+                </Box>
               </Card>
             ))}
           </SimpleGrid>
+
           {recipes.length === 0 && (
-            <Center mt="xl">
-              <Text c="dimmed">Questo chef non ha ancora pubblicato ricette.</Text>
+            <Center h={200}>
+              <Stack align="center" gap="xs">
+                <ChefHat size={40} color="#dee2e6" />
+                <Text c="dimmed" fw={500}>Nessuna ricetta pubblicata.</Text>
+              </Stack>
             </Center>
           )}
         </Grid.Col>
