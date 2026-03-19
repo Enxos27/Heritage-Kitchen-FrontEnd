@@ -3,7 +3,7 @@ import {
   SimpleGrid, Container, Card, Image, Text, Group, 
   Badge, Avatar, Stack, Box, Grid, Loader, Center, Button, Paper, Title, Divider
 } from '@mantine/core';
-import { GitFork } from 'lucide-react';
+import { GitFork, ChefHat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../Service/api';
 
@@ -190,9 +190,23 @@ const Home = () => {
         {/* COLONNA LATERALE (Suggerimenti) */}
         <Grid.Col span={4} visibleFrom="md">
           <Box style={{ position: 'sticky', top: 100 }}>
-            <Paper withBorder radius="md" p="xl" bg="gray.0">
-              <Text fw={700} mb="xl" size="lg">Chef da scoprire</Text>
-              
+            <Paper withBorder radius="md" p="xl" bg="white" shadow='md'>
+              <Group gap="xs" mb="xl">
+                <ChefHat 
+                  size={24} // Dimensione bilanciata con il testo lg
+                  color="var(--mantine-color-orange-6)" // Colore del brand per l'icona
+                  strokeWidth={2.5} // Rende l'icona un po' più solida
+                />
+                <Text 
+                  fw={800} // Testo più spesso per il titolo
+                  size="xl" // Dimensione aumentata leggermente (xl) per gerarchia
+                  lts={-0.5} // Compattazione leggera delle lettere per un look moderno
+                  style={{ fontFamily: 'Greycliff CF, sans-serif' }}
+                >
+                  Chef da scoprire
+                </Text>
+              </Group>
+
               <Stack gap="md">
                 {suggestions.map((u) => (
                   <Group 

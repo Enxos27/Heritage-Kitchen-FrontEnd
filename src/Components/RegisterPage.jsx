@@ -1,51 +1,94 @@
 import { useForm } from '@mantine/form';
-import { TextInput, PasswordInput, Button, Paper, Title, Container, Text, Anchor, Textarea } from '@mantine/core';
+import { TextInput, PasswordInput, Button, Paper, Title, Container, Text, Anchor, Textarea, Avatar, Stack, Group } from '@mantine/core';
 import { useNavigate, Link } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
+import { AtSign, User, Lock, BookText } from 'lucide-react';
 import axios from 'axios';
+import logoImg from '../assets/logo_heritage_kitchen.png';
+
 const Register = () => {
   const navigate = useNavigate();
   const form = useForm({
     initialValues: { username: '', email: '', password: '', bio: '' },
+    validate: {
+      email: (value) => (/^\S+@\S+$/.test(value) ? null : 'Email non valida'),
+      password: (value) => (value.length < 6 ? 'La password deve avere almeno 6 caratteri' : null),
+    }
   });
 
   const handleSubmit = async (values) => {
     try {
-    // Invio i dati al backend usando axios direttamente, senza passare dall'istanza api per evitare confusione con il token che non serve alla registrazione
-    // axios è un client HTTP che ci permette di fare richieste al backend, funziona in modo simile a fetch ma con una sintassi più pulita e alcune funzionalità aggiuntive come l'intercettazione delle richieste e risposte, gestione automatica dei JSON, ecc.
       await axios.post('http://localhost:8080/user/register', values);
-      // notifications è una libreria di Mantine che ci permette di mostrare messaggi di notifica all'utente in modo semplice e personalizzabile. Qui la usiamo per mostrare un messaggio di successo dopo la registrazione e poi reindirizzare l'utente alla pagina di login.
-      notifications.show({ title: 'Ottimo!', message: 'Account creato, ora accedi.', color: 'green' });
+      notifications.show({ 
+        title: 'Benvenuto!', 
+        message: 'Il tuo ricettario personale ti aspetta. Accedi ora.', 
+        color: 'green' 
+      });
       navigate('/login');
     // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      notifications.show({ title: 'Errore', message: 'Impossibile registrarsi', color: 'red' });
+      notifications.show({ title: 'Errore', message: 'Dati non validi o email già esistente', color: 'red' });
     }
   };
 
   return (
-    <Container size={420} my={40}>
-      <Title ta="center">Unisciti alla community</Title>
-      
-      {/* Testo sopra il form per chi ha già un account */}
-      <Text c="dimmed" size="sm" ta="center" mt={5}>
-        Hai già un account?{' '}
-        <Anchor size="sm" component={Link} to="/login" fw={700} c="orange">
-          Accedi qui
-        </Anchor>
-      </Text>
+    <Container size={450} my={40}>
+      <Stack align="center" gap="xs" mb={20}>
+        <Avatar src={logoImg} size={120} radius="xl" />
+        <Title ta="center" fw={800} lts={-1}>Unisciti alla Community</Title>
+        <Text c="dimmed" size="sm">Condividi le tue tradizioni con il mondo</Text>
+      </Stack>
 
-      <Paper withBorder shadow="md" p={30} mt={30} radius="md">
+      <Paper withBorder shadow="xl" p={40} radius="lg">
         <form onSubmit={form.onSubmit(handleSubmit)}>
-          <TextInput label="Username" placeholder="Chefsicily" required {...form.getInputProps('username')} />
-          <TextInput label="Email" placeholder="tua@email.it" required mt="md" {...form.getInputProps('email')} />
-          <PasswordInput label="Password" required mt="md" {...form.getInputProps('password')} />
-          <Textarea label="Bio" placeholder="Parlaci di te..." mt="md" {...form.getInputProps('bio')} />
+          <Group grow mb="md">
+            <TextInput 
+              label="Username" 
+              placeholder="TheBestChef" 
+              required 
+              leftSection={<User size={16} />}
+              {...form.getInputProps('username')} 
+            />
+          </Group>
+
+          <TextInput 
+            label="Email" 
+            placeholder="your@email.com" 
+            required 
+            leftSection={<AtSign size={16} />}
+            {...form.getInputProps('email')} 
+          />
           
-          <Button fullWidth mt="xl" color="orange" type="submit">
-            Crea Account
+          <PasswordInput 
+            label="Password" 
+            placeholder="At least 6 characters"
+            required 
+            mt="md" 
+            leftSection={<Lock size={16} />}
+            {...form.getInputProps('password')} 
+          />
+
+          <Textarea 
+            label="Bio (Opzionale)" 
+            placeholder="Qual è la tua specialità in cucina?" 
+            mt="md" 
+            autosize
+            minRows={2}
+            leftSection={<BookText size={16} />}
+            {...form.getInputProps('bio')} 
+          />
+          
+          <Button fullWidth mt="xl" color="orange" type="submit" size="md" radius="md">
+            Inizia a cucinare
           </Button>
         </form>
+
+        <Text ta="center" size="sm" mt="lg">
+          Hai già un account?{' '}
+          <Anchor component={Link} to="/login" fw={700} c="orange">
+            Torna al login
+          </Anchor>
+        </Text>
       </Paper>
     </Container>
   );

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Title, UnstyledButton, Group, Text, Box, Stack, Avatar, Divider, Popover, ScrollArea, Loader, Center } from '@mantine/core';
+import { Title, UnstyledButton, Group, Text, Box, Stack, Avatar, Divider, Popover, ScrollArea, Loader, Center, Paper } from '@mantine/core';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Search, Compass, Heart, PlusSquare, User, LogOut, Bell } from 'lucide-react';
 import api from '../Service/api';
+import logoImg from '../assets/logo_heritage_kitchen.png';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -48,31 +49,48 @@ const Sidebar = () => {
   };
 
   return (
-    <Box 
+    <Paper 
+      component="nav" // Semantico per la sidebar
       w={250} 
       p="md" 
+      shadow="xl" 
+      withBorder 
       style={{ 
         height: '100vh', 
         position: 'fixed', 
-        borderRight: '1px solid #e9ecef',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 100,
-        backgroundColor: 'white'
+        backgroundColor: 'white',
+        borderRadius: 0, // Importante: rimuove gli angoli arrotondati della sidebar
+        borderTop: 0,
+        borderBottom: 0,
+        borderLeft: 0,
       }}
     >
       {/* 1. LOGO APP */}
-      <Title 
-        order={3} 
-        mb={40} 
-        pl="sm" 
-        c="orange" 
-        style={{ cursor: 'pointer', fontFamily: 'Greycliff CF, sans-serif' }} 
-        onClick={() => navigate('/')}
-      >
-        Heritage Kitchen
-      </Title>
-
+     <UnstyledButton onClick={() => navigate('/')} mb={40} p="xs">
+        <Group gap="sm" wrap="nowrap">
+          <Avatar 
+            src={logoImg} 
+            alt="Heritage Kitchen Logo" 
+            size={40} // Dimensione "piccolina" (es. 40px)
+            radius="xl" // Lo rende perfettamente rotondo
+            color="orange" // Colore di fallback se l'immagine non carica
+          />
+          <Title 
+            order={3} 
+            c="orange" 
+            style={{ 
+              fontFamily: 'Greycliff CF, sans-serif',
+              letterSpacing: '-1px', // Rende il font più compatto e moderno
+              lineHeight: 1
+            }}
+          >
+            Heritage Kitchen
+          </Title>
+        </Group>
+      </UnstyledButton>
       {/* 2. MENU DI NAVIGAZIONE */}
       <Stack flex={1} gap={8}>
         {menuItems.map((item) => {
@@ -228,7 +246,7 @@ const Sidebar = () => {
           </Group>
         </UnstyledButton>
       </Box>
-    </Box>
+    </Paper>
   );
 };
 
