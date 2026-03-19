@@ -10,7 +10,8 @@ import SearchPage from './Components/SearchPage';
 import CreateRecipe from './Components/CreateRecipe';
 import ProfilePage from './Components/ProfilePage';
 import UserProfile from './Components/UserProfile';
-
+import ExplorePage from './Components/ExplorePage';
+import NotificationsPage from './Components/NotificationsPage';
 
 function App() {
   const location = useLocation();
@@ -55,6 +56,8 @@ function App() {
           <Route path="/create" element={<CreateRecipe />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:userId" element={<UserProfile />} />
+            <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
         </Routes>
       </AppShell.Main>
     </AppShell>

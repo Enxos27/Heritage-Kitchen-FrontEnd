@@ -3,7 +3,7 @@ import {
   Container, Title, TextInput, NumberInput, Select, Textarea, 
   Button, Group, Stack, Paper, ActionIcon, Text, FileInput, Badge
 } from '@mantine/core';
-import { Plus, Trash, Camera, Save, GitFork } from 'lucide-react';
+import { Plus, Trash, Camera, Save, Tag, X, GitFork } from 'lucide-react';
 import { notifications } from '@mantine/notifications';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../Service/api';
@@ -13,16 +13,13 @@ const CreateRecipe = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
 
-  // Identifichiamo la modalità (Modifica o Variante)
-  // editRecipe: se presente, indica che stiamo modificando una ricetta esistente e contiene i dati della ricetta da modificare
-  // original: se presente senza editRecipe, indica che stiamo creando una variante e contiene i dati della ricetta originale da cui partire
-  // parentId: se presente senza editRecipe, indica che stiamo creando una variante e contiene l'id della ricetta originale da cui partire
-  // isEditing: boolean che indica se siamo in modalità modifica (true) o creazione (false)
   const editRecipe = location.state?.editRecipe || null;
   const original = location.state?.originalRecipe || null;
   const parentId = location.state?.parentId || null;
-  // usiamo i due punti esclamativi per forzare la conversione in booleano, in modo che isEditing sia true solo se editRecipe è un oggetto valido e non null o undefined
   const isEditing = !!editRecipe;
+
+  // AGGIUNTO: Stato per gestire l'input del tag in modo reattivo
+  const [tagInputValue, setTagInputValue] = useState('');
 
   const [formData, setFormData] = useState({
     titolo: '',
@@ -38,13 +35,17 @@ const CreateRecipe = () => {
 
   const [imageFile, setImageFile] = useState(null);
 
-  // Popolamento automatico campi
   useEffect(() => {
-    // La logica è: se siamo in modifica, prendo i dati da editRecipe, altrimenti se stiamo creando una variante prendo i dati da original. Se nessuno dei due è presente (creazione da zero), lascio i campi vuoti o con valori di default.
     const source = editRecipe || original;
     if (source) {
+      let baseTags = source.tags?.map(t => typeof t === 'object' ? (t.nome || t.value) : t) || [];
+      
+      if (parentId && !isEditing && !baseTags.includes('Variante')) {
+        baseTags = [...baseTags, 'Variante'];
+      }
+
       setFormData({
-        titolo: isEditing ? source.titolo : `${source.titolo} (Variante)`,
+        titolo: source.titolo || '', 
         descrizione: source.descrizione || '',
         difficolta: source.difficolta || 'FACILE',
         tempoPrep: source.tempoPrep || 15,
@@ -52,10 +53,37 @@ const CreateRecipe = () => {
         parentRecipeId: isEditing ? source.parentRecipe?.id : parentId,
         ingredienti: source.ingredienti?.map(i => ({ nome: i.nome, quantita: i.quantita })) || [{ nome: '', quantita: '' }],
         steps: source.steps?.map(s => ({ ordine: s.ordine, descrizione: s.descrizione })) || [{ ordine: 1, descrizione: '' }],
-        tags: source.tags || []
+        tags: baseTags
       });
     }
   }, [editRecipe, original, isEditing, parentId]);
+
+  // LOGICA CORRETTA: Usa il parametro passato o lo stato dell'input
+  const handleAddTag = (val) => {
+    const cleanVal = val?.trim();
+    if (!cleanVal) return;
+
+    if (!parentId && cleanVal.toLowerCase() === 'variante') {
+      notifications.show({ 
+        title: 'Azione non consentita',
+        message: 'Il tag "Variante" è riservato alle fork automatiche.', 
+        color: 'red' 
+      });
+      return;
+    }
+
+    if (!formData.tags.includes(cleanVal)) {
+      setFormData(prev => ({ ...prev, tags: [...prev.tags, cleanVal] }));
+    }
+    setTagInputValue(''); // Pulisce l'input
+  };
+
+  const removeTag = (indexToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter((_, index) => index !== indexToRemove)
+    }));
+  };
 
   const addIngredient = () => setFormData({...formData, ingredienti: [...formData.ingredienti, { nome: '', quantita: '' }]});
   const addStep = () => setFormData({...formData, steps: [...formData.steps, { ordine: formData.steps.length + 1, descrizione: '' }]});
@@ -63,12 +91,18 @@ const CreateRecipe = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    const cleanFormData = {
+      ...formData,
+      tags: formData.tags.map(tag => (typeof tag === 'object') ? (tag.value || tag.nome) : tag)
+    };
+
     try {
       let res;
       if (isEditing) {
-        res = await api.put(`/recipes/${editRecipe.id}`, formData);
+        res = await api.put(`/recipes/${editRecipe.id}`, cleanFormData);
       } else {
-        res = await api.post('/recipes/create', formData);
+        res = await api.post('/recipes/create', cleanFormData);
       }
 
       const recipeId = isEditing ? editRecipe.id : res.data.id;
@@ -79,14 +113,10 @@ const CreateRecipe = () => {
         await api.patch(`/recipes/${recipeId}/image`, imgData);
       }
 
-      notifications.show({ 
-        title: 'Successo!', 
-        message: isEditing ? 'Ricetta aggiornata' : 'Ricetta pubblicata', 
-        color: 'green' 
-      });
+      notifications.show({ title: 'Successo!', message: isEditing ? 'Ricetta aggiornata' : 'Ricetta pubblicata', color: 'green' });
       navigate(`/recipes/${recipeId}`);
-    // eslint-disable-next-line no-unused-vars
     } catch (error) {
+      console.error("Errore invio:", error);
       notifications.show({ title: 'Errore', message: 'Controlla i dati inseriti', color: 'red' });
     } finally {
       setLoading(false);
@@ -95,17 +125,80 @@ const CreateRecipe = () => {
 
   return (
     <Container size="md" pt={40} pb={100}>
-      <Title order={1} fw={900} mb="xl">
-        {isEditing ? `Modifica: ${editRecipe.titolo}` : (parentId ? 'Crea una Variante' : 'Nuova Ricetta')}
-      </Title>
+      
+      <Stack gap="xs" mb="xl">
+        <Title order={1} fw={900} lts={-1}>
+          {isEditing ? `Modifica Ricetta` : (parentId ? 'Crea una Variante' : 'Nuova Ricetta')}
+        </Title>
+        
+        {parentId && !isEditing && (
+          <Paper withBorder p="sm" radius="md" bg="teal.0" style={{ borderColor: 'var(--mantine-color-teal-2)' }}>
+            <Group gap="xs">
+              <Badge color="teal" variant="filled" leftSection={<GitFork size={12} />}>Fork</Badge>
+              <Text size="sm">
+                Stai creando una variante di <strong>{original?.titolo}</strong> di <i>{original?.user?.username}</i>
+              </Text>
+            </Group>
+          </Paper>
+        )}
+      </Stack>
 
       <form onSubmit={handleSubmit}>
         <Stack gap="xl">
           <Paper withBorder p="xl" radius="md" shadow="xs">
             <Stack gap="md">
               <Title order={4} c="orange">Dettagli Principali</Title>
-              <TextInput label="Titolo" required value={formData.titolo} onChange={(e) => setFormData({...formData, titolo: e.target.value})} />
-              <Textarea label="Descrizione" required value={formData.descrizione} onChange={(e) => setFormData({...formData, descrizione: e.target.value})} />
+              <TextInput 
+                label="Titolo" required placeholder="Es: Risotto alla Milanese"
+                value={formData.titolo} onChange={(e) => setFormData({...formData, titolo: e.target.value})} 
+              />
+              <Textarea 
+                label="Descrizione" required placeholder="Racconta la tua versione del piatto..."
+                value={formData.descrizione} onChange={(e) => setFormData({...formData, descrizione: e.target.value})} 
+              />
+              
+              <Stack gap="xs">
+                <Text size="sm" fw={500}>Tag della ricetta</Text>
+                <Group align="flex-end">
+                  <TextInput
+                    placeholder="Premi Invio per aggiungere un tag"
+                    style={{ flex: 1 }}
+                    value={tagInputValue}
+                    onChange={(e) => setTagInputValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTag(tagInputValue);
+                      }
+                    }}
+                  />
+                  <Button color="orange" variant="light" onClick={() => handleAddTag(tagInputValue)}>
+                    Aggiungi
+                  </Button>
+                </Group>
+                
+                <Group gap="xs" mt="xs">
+                  {formData.tags.map((tag, index) => {
+                    const isProtected = tag === 'Variante';
+                    return (
+                      <Badge 
+                        key={`${tag}-${index}`} 
+                        variant="filled" 
+                        color={isProtected ? 'teal' : 'orange'} 
+                        size="lg"
+                        rightSection={!isProtected && (
+                          <ActionIcon size="xs" color="white" variant="transparent" onClick={() => removeTag(index)}>
+                            <X size={12} />
+                          </ActionIcon>
+                        )}
+                      >
+                        {tag}
+                      </Badge>
+                    );
+                  })}
+                </Group>
+              </Stack>
+
               <Group grow>
                 <Select label="Difficoltà" data={['FACILE', 'MEDIA', 'DIFFICILE']} value={formData.difficolta} onChange={(val) => setFormData({...formData, difficolta: val})} />
                 <NumberInput label="Prep. (min)" value={formData.tempoPrep} onChange={(val) => setFormData({...formData, tempoPrep: val})} />

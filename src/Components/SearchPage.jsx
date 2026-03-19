@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Container, TextInput, SimpleGrid, Title, Text, Center, Loader, Box, Stack } from '@mantine/core';
-import { Search } from 'lucide-react';
+import { Search, GitFork } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../Service/api';
 import { Card, Image, Group, Badge, Avatar, ActionIcon } from '@mantine/core';
@@ -60,24 +60,38 @@ const SearchPage = () => {
         <Center mt={50}><Loader color="orange" size="xl" /></Center>
       ) : (
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-          {results.map((recipe) => (
-            <Card 
-              key={recipe.id} 
-              shadow="sm" 
-              padding="lg" 
-              radius="md" 
-              withBorder 
-              style={{ cursor: 'pointer' }}
-              onClick={() => navigate(`/recipes/${recipe.id}`)}
-            >
-              <Card.Section>
-                <Image src={recipe.imageURL || "https://placehold.co/600x400"} height={180} alt={recipe.titolo} />
-              </Card.Section>
+         {results.map((recipe) => (
+  <Card 
+    key={recipe.id} 
+    shadow="sm" 
+    padding="lg" 
+    radius="md" 
+    withBorder 
+    style={{ cursor: 'pointer', borderBottom: '4px solid #fab005' }} 
+    onClick={() => navigate(`/recipes/${recipe.id}`)}
+  >
+    <Card.Section pos="relative"> {/* Aggiunto pos="relative" per posizionare correttamente il badge */}
+      <Image src={recipe.imageURL || "https://placehold.co/600x400"} height={180} alt={recipe.titolo} />
+      
+      {/* BADGE VARIANTE */}
+      {recipe.parentRecipe && (
+        <Badge 
+                      pos="absolute" 
+                      top={10} 
+                      right={10} 
+                      color="teal" 
+                      variant="filled" 
+                      leftSection={<GitFork size={12}/>}
+                    >
+                      Variante
+                    </Badge>
+      )}
+    </Card.Section>
 
-              <Group justify="space-between" mt="md" mb="xs">
-                <Text fw={700} className="line-clamp-1">{recipe.titolo}</Text>
-                <Badge color="orange" variant="light">{recipe.difficolta}</Badge>
-              </Group>
+    <Group justify="space-between" mt="md" mb="xs">
+      <Text fw={700} className="line-clamp-1">{recipe.titolo}</Text>
+      <Badge color="orange" variant="light">{recipe.difficolta}</Badge>
+    </Group>
 
               <Text size="sm" c="dimmed" mb="md" className="line-clamp-2">
                 {recipe.descrizione}

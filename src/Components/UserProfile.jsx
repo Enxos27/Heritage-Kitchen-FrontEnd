@@ -5,7 +5,7 @@ import {
   Group, Button, Divider, SimpleGrid, Card, Image, 
   Loader, Center, Paper, Box, Badge 
 } from '@mantine/core';
-import { UserPlus, UserCheck, ArrowLeft } from 'lucide-react';
+import { UserPlus, UserCheck, ArrowLeft, GitFork } from 'lucide-react'; // Aggiunto GitFork
 import { notifications } from '@mantine/notifications';
 import api from '../Service/api';
 
@@ -18,9 +18,10 @@ const UserProfile = () => {
   const [isFollowed, setIsFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Recupero l'utente loggato dal localStorage per il controllo "me stesso"
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  const isMe = currentUser?.id === userId;
+  // userId dagli useParams è spesso una stringa, currentUser.id può essere numero o stringa
+  // Usiamo == per evitare problemi di tipo o forziamo a stringa
+  const isMe = String(currentUser?.id) === String(userId);
 
   const fetchProfileData = async () => {
     try {
@@ -28,9 +29,8 @@ const UserProfile = () => {
       const data = profileRes.data;
       
       setUserData(data);
-      setIsFollowed(data.isFollowedByMe); // Stato persistente dal Backend
+      setIsFollowed(data.isFollowedByMe); 
       
-      // Protezione NaN: mappo i nomi esatti dal DTO Java
       setStats({
         followers: data.stats.followersCount || 0,
         following: data.stats.followingCount || 0,
@@ -49,24 +49,19 @@ const UserProfile = () => {
 
   useEffect(() => {
     fetchProfileData();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const handleFollow = async () => {
     try {
       await api.post(`/social/follow/${userId}`);
-      
-      // Aggiornamento ottimistico locale
       const newFollowState = !isFollowed;
       setIsFollowed(newFollowState);
       
-      // Aggiorno i contatori in base alla nuova relazione
       setStats(prev => ({
         ...prev,
         followers: newFollowState ? prev.followers + 1 : prev.followers - 1
       }));
-
-    // eslint-disable-next-line no-unused-vars
     } catch (error) {
       notifications.show({ message: "Errore durante l'operazione", color: "red" });
     }
@@ -107,7 +102,6 @@ const UserProfile = () => {
               </Stack>
             </Group>
 
-            {/* Mostro il tasto Segui solo se NON è il mio profilo */}
             {!isMe && (
               <Button 
                 fullWidth size="md" radius="md"
@@ -133,11 +127,32 @@ const UserProfile = () => {
           <Title order={3} mb="lg">Le ricette di {userData?.username}</Title>
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
             {recipes.map((recipe) => (
-              <Card key={recipe.id} withBorder padding="lg" radius="md" 
-                    onClick={() => navigate(`/recipes/${recipe.id}`)} style={{ cursor: 'pointer' }}>
-                <Card.Section>
-                  <Image src={recipe.imageUrl || "https://placehold.co/600x400"} height={180} />
+              <Card 
+                key={recipe.id} 
+                withBorder 
+                padding="lg" 
+                radius="md" 
+                onClick={() => navigate(`/recipes/${recipe.id}`)} 
+                style={{ cursor: 'pointer' }}
+              >
+                <Card.Section pos="relative"> {/* Aggiunto pos="relative" */}
+                  <Image src={recipe.imageURL || recipe.imageUrl || "https://placehold.co/600x400"} height={180} />
+                  
+                  {/* BADGE VARIANTE */}
+                  {recipe.parentRecipe && (
+                    <Badge 
+                      pos="absolute" 
+                      top={10} 
+                      right={10} 
+                      color="teal" 
+                      variant="filled" 
+                      leftSection={<GitFork size={12}/>}
+                    >
+                      Variante
+                    </Badge>
+                  )}
                 </Card.Section>
+                
                 <Text fw={700} mt="md" className="line-clamp-1">{recipe.titolo}</Text>
                 <Group justify="space-between" mt="xs">
                   <Badge variant="light" color="orange">{recipe.difficolta}</Badge>
@@ -146,6 +161,11 @@ const UserProfile = () => {
               </Card>
             ))}
           </SimpleGrid>
+          {recipes.length === 0 && (
+            <Center mt="xl">
+              <Text c="dimmed">Questo chef non ha ancora pubblicato ricette.</Text>
+            </Center>
+          )}
         </Grid.Col>
       </Grid>
     </Container>
