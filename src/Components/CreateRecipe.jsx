@@ -13,6 +13,7 @@ const CreateRecipe = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
 
+  // Se la pagina è stata raggiunta tramite navigazione da un'altra ricetta, possiamo avere dei dati nello stato di location che ci indicano se stiamo modificando una ricetta esistente (editRecipe) o creando una variante (originalRecipe e parentId). Questi dati ci permettono di precompilare il form con le informazioni della ricetta da modificare o della ricetta originale da cui stiamo creando una variante. Se non abbiamo questi dati, significa che stiamo creando una nuova ricetta da zero.
   const editRecipe = location.state?.editRecipe || null;
   const original = location.state?.originalRecipe || null;
   const parentId = location.state?.parentId || null;
@@ -59,6 +60,7 @@ const CreateRecipe = () => {
   }, [editRecipe, original, isEditing, parentId]);
 
   // LOGICA CORRETTA: Usa il parametro passato o lo stato dell'input
+  // La funzione handleAddTag ora accetta un valore come parametro, che può essere passato sia dall'evento di keyDown (quando l'utente preme Invio) che dal click sul pulsante "Aggiungi". In entrambi i casi, il valore viene pulito dagli spazi e controllato per evitare tag vuoti. Inoltre, se stiamo creando una variante (parentId è presente) e l'utente tenta di aggiungere il tag "Variante" manualmente, mostriamo una notifica di errore perché questo tag è riservato alle fork automatiche. Se il tag è valido e non è già presente nella lista dei tag, viene aggiunto al formData e l'input viene pulito.
   const handleAddTag = (val) => {
     const cleanVal = val?.trim();
     if (!cleanVal) return;
@@ -78,6 +80,7 @@ const CreateRecipe = () => {
     setTagInputValue(''); // Pulisce l'input
   };
 
+  // La funzione removeTag accetta l'indice del tag da rimuovere e aggiorna lo stato formData filtrando la lista dei tag per escludere quello all'indice specificato. In questo modo, quando l'utente clicca sull'icona di chiusura accanto a un tag, quel tag viene rimosso dalla lista dei tag associati alla ricetta.
   const removeTag = (indexToRemove) => {
     setFormData(prev => ({
       ...prev,
@@ -85,9 +88,16 @@ const CreateRecipe = () => {
     }));
   };
 
+// Le funzioni addIngredient e addStep aggiungono un nuovo oggetto vuoto alla lista degli ingredienti o degli step nel formData. Per gli ingredienti, viene aggiunto un oggetto con nome e quantità vuoti, mentre per gli step viene aggiunto un oggetto con l'ordine basato sulla lunghezza attuale della lista degli step (in modo da mantenere la numerazione corretta) e una descrizione vuota. Queste funzioni vengono chiamate quando l'utente clicca sul pulsante "Aggiungi" nella sezione degli ingredienti o del procedimento, permettendo di aggiungere dinamicamente più campi al form.
   const addIngredient = () => setFormData({...formData, ingredienti: [...formData.ingredienti, { nome: '', quantita: '' }]});
   const addStep = () => setFormData({...formData, steps: [...formData.steps, { ordine: formData.steps.length + 1, descrizione: '' }]});
 
+  // La funzione handleSubmit gestisce l'invio del form. 
+  // Prima previene il comportamento di default del form, poi imposta lo stato di loading a true per indicare che stiamo elaborando l'invio. 
+  // Prepara i dati del form, assicurandosi che i tag siano in formato stringa (estrapolando il nome o valore se sono oggetti). 
+  // Se stiamo modificando una ricetta esistente, invia una richiesta PUT al server con i dati aggiornati, altrimenti invia una richiesta POST per creare una nuova ricetta.
+  //  Se è stata selezionata un'immagine, la carica separatamente con una richiesta PATCH. Infine, mostra una notifica di successo e reindirizza l'utente alla pagina della ricetta appena creata o modificata.
+  //  In caso di errore, mostra una notifica di errore e stampa l'errore nella console. Al termine dell'operazione, imposta loading a false.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

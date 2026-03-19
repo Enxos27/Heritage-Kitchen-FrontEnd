@@ -12,6 +12,10 @@ import api from '../Service/api';
 const UserProfile = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  // userData contiene le informazioni di base dell'utente (username, avatar, bio), 
+  // recipes è la lista delle ricette pubblicate dall'utente, 
+  // stats contiene i numeri di follower, seguiti e ricette, 
+  // isFollowed indica se l'utente corrente segue questo profilo e loading gestisce lo stato di caricamento dei dati.
   const [userData, setUserData] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [stats, setStats] = useState({ followers: 0, following: 0, recipesCount: 0 });
@@ -23,6 +27,7 @@ const UserProfile = () => {
   // Usiamo == per evitare problemi di tipo o forziamo a stringa
   const isMe = String(currentUser?.id) === String(userId);
 
+  // Funzione per caricare i dati del profilo utente. Fa una chiamata al server per ottenere le informazioni dell'utente, i suoi follower, seguiti e ricette. Aggiorna lo stato con i dati ricevuti e gestisce eventuali errori mostrando una notifica. Al termine, imposta loading a false per indicare che i dati sono stati caricati.
   const fetchProfileData = async () => {
     try {
       const profileRes = await api.get(`/user/${userId}/profile`);
@@ -52,6 +57,7 @@ const UserProfile = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  // Funzione per gestire il click sul pulsante di follow/unfollow. Invia una richiesta al server per seguire o smettere di seguire l'utente, poi aggiorna lo stato di follow e i contatori dei follower di conseguenza. Mostra una notifica di successo o errore a seconda dell'esito dell'operazione.
   const handleFollow = async () => {
     try {
       await api.post(`/social/follow/${userId}`);
@@ -62,6 +68,7 @@ const UserProfile = () => {
         ...prev,
         followers: newFollowState ? prev.followers + 1 : prev.followers - 1
       }));
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
       notifications.show({ message: "Errore durante l'operazione", color: "red" });
     }

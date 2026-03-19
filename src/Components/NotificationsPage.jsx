@@ -45,7 +45,7 @@ const NotificationsPage = () => {
             variant="subtle" 
             color="gray" 
             onClick={() => navigate(-1)}
-            hiddenFrom="sm" // Nascondi su desktop se necessario
+            hiddenFrom="sm" 
           >
             <ArrowLeft size={24} />
           </ActionIcon>

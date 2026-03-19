@@ -6,8 +6,7 @@ const MobileNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isActive = (path) => location.pathname === path;
-
-  // Items aggiornati per riflettere la nuova strategia Mobile
+  
   const items = [
     { icon: Home, path: '/' },
     { icon: Compass, path: '/explore' },   // Explore ora fa anche da Search su mobile

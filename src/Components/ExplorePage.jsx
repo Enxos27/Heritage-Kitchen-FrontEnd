@@ -12,8 +12,18 @@ import api from '../Service/api';
 
 const ExplorePage = () => {
   const navigate = useNavigate();
+  // Stato per gestire la visualizzazione mobile e desktop, in particolare per mostrare o nascondere la barra di ricerca e adattare il layout.
   const isMobile = useMediaQuery('(max-width: 768px)');
   
+  // suggestedChefs: lista degli chef consigliati da mostrare di default
+    // page: numero della pagina per la paginazione degli chef consigliati
+    // isLast: booleano che indica se abbiamo raggiunto l'ultima pagina di chef consigliati
+    // filteredRecipes: lista di ricette filtrate per tag, se è null mostriamo gli chef consigliati, altrimenti mostriamo queste ricette
+    // activeTag: tag attualmente attivo per il filtro, usato per evidenziare il badge del tag selezionato
+    // loading: booleano che indica se stiamo caricando i dati iniziali (chef consigliati o ricette filtrate)
+    // loadingMore: booleano che indica se stiamo caricando più chef consigliati per la paginazione
+    // currentUser: dati dell'utente loggato, usati per gestire la logica di follow/unfollow e nascondere il pulsante di follow su se stessi
+
   const [suggestedChefs, setSuggestedChefs] = useState([]);
   const [page, setPage] = useState(0);
   const [isLast, setIsLast] = useState(false);
@@ -30,6 +40,7 @@ const ExplorePage = () => {
   const popularTags = ["Sicilia", "Tradizione", "Pasta", "Dolci", "Veloce", "Pesce", "Vegano"];
 
   useEffect(() => {
+    // Al caricamento della pagina, recupero l'utente loggato dal localStorage per gestire la logica di follow/unfollow e mostrare i dati corretti. Poi carico i primi chef consigliati.
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -43,6 +54,7 @@ const ExplorePage = () => {
 
   useEffect(() => {
     const searchRecipes = async () => {
+        // Se la query è vuota o troppo corta, resetto i risultati e non faccio la chiamata al server per evitare di sovraccaricare il backend con richieste inutili. Altrimenti, imposto lo stato di ricerca in corso, resetto eventuali filtri attivi e faccio la chiamata al server per cercare le ricette che corrispondono alla query. Al termine, aggiorno i risultati o mostro un messaggio di errore se la chiamata fallisce.
       if (searchQuery.trim().length < 2) {
         setSearchResults(null);
         return;
@@ -69,6 +81,7 @@ const ExplorePage = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
+  // Funzione per caricare i dati degli chef consigliati. Accetta il numero di pagina da caricare e un booleano isAppend che indica se aggiungere i nuovi chef alla lista esistente (true) o sovrascriverla (false). Imposta lo stato di caricamento appropriato, fa la chiamata al server per ottenere gli chef consigliati per la pagina richiesta, aggiorna lo stato con i nuovi chef e gestisce eventuali errori. Al termine, resetta lo stato di caricamento.
   const fetchExploreData = async (pageNumber, isAppend = false) => {
     if (isAppend) setLoadingMore(true);
     else setLoading(true);
@@ -86,12 +99,14 @@ const ExplorePage = () => {
     }
   };
 
+  // Funzione per gestire il click sul pulsante "Carica Altri" nella sezione degli chef consigliati. Incrementa il numero di pagina e chiama la funzione di fetch con isAppend=true per aggiungere i nuovi chef alla lista esistente invece di sovrascriverla.
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
     fetchExploreData(nextPage, true);
   };
 
+  // Funzione per gestire il click sul pulsante di follow/unfollow accanto a ogni chef consigliato. Invia una richiesta al server per seguire o smettere di seguire lo chef, poi aggiorna lo stato degli chef consigliati per riflettere il nuovo stato di follow e mostra una notifica di successo o errore a seconda dell'esito dell'operazione.
   const handleFollow = async (chefId, currentState) => {
     try {
       await api.post(`/social/follow/${chefId}`);
@@ -102,11 +117,13 @@ const ExplorePage = () => {
         message: !currentState ? "Chef seguito!" : "Non segui più questo chef", 
         color: !currentState ? "orange" : "gray" 
       });
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
       notifications.show({ message: "Errore durante l'operazione", color: "red" });
     }
   };
 
+  // Funzione per gestire il click su un tag nella sezione "Tendenze del momento". Se il tag cliccato è già attivo, disattiva il filtro e mostra di nuovo gli chef consigliati. Altrimenti, imposta il tag come attivo, mostra lo stato di caricamento e fa una chiamata al server per ottenere le ricette associate a quel tag. Al termine, aggiorna lo stato con le ricette filtrate o mostra un messaggio di errore se la chiamata fallisce.
   const handleTagClick = async (tag) => {
     setSearchQuery('');
     setSearchResults(null);
