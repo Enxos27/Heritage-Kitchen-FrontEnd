@@ -65,6 +65,7 @@ const Home = () => {
   useEffect(() => {
     fetchSuggestions();
     fetchRecipes(0, false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -114,7 +115,7 @@ const Home = () => {
             {recipes.map((recipe, index) => (
               <Card 
                 key={`${recipe.id}-${index}`} // Key migliorata per evitare duplicati visivi durante il random
-                shadow="sm" padding="lg" radius="md" withBorder
+                shadow="sm" padding="lg" radius="lg" withBorder
                 onClick={() => navigate(`/recipes/${recipe.id}`)}
                 style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
