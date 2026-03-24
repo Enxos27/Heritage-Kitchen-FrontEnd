@@ -210,7 +210,7 @@ const CreateRecipe = () => {
               </Stack>
 
               <Group grow>
-                <Select label="Difficoltà" data={['FACILE', 'MEDIA', 'DIFFICILE']} value={formData.difficolta} onChange={(val) => setFormData({...formData, difficolta: val})} />
+                <Select label="Difficoltà" data={['FACILE', 'MEDIO', 'DIFFICILE']} value={formData.difficolta} onChange={(val) => setFormData({...formData, difficolta: val})} />
                 <NumberInput label="Prep. (min)" value={formData.tempoPrep} onChange={(val) => setFormData({...formData, tempoPrep: val})} />
                 <NumberInput label="Cottura (min)" value={formData.tempoCottura} onChange={(val) => setFormData({...formData, tempoCottura: val})} />
               </Group>

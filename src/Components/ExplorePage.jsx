@@ -2,28 +2,34 @@ import { useState, useEffect } from 'react';
 import { 
   Container, Title, Text, Badge, Group, 
   Stack, SimpleGrid, Paper, Avatar, Loader, Center, 
-  Box, Button, Divider, AspectRatio, TextInput 
+  Box, Button, Divider, Image, Card, TextInput 
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { Flame, ArrowRight, UserPlus, UserCheck, Sparkles, X, ChevronDown, Search, GitFork } from 'lucide-react';
+import { 
+  ArrowRight, UserPlus, UserCheck, Sparkles, 
+  X, Search, GitFork, Clock, Heart 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import api from '../Service/api';
 
 const ExplorePage = () => {
   const navigate = useNavigate();
-  // Stato per gestire la visualizzazione mobile e desktop, in particolare per mostrare o nascondere la barra di ricerca e adattare il layout.
+  //isMo\bile è una variabile booleana che indica se la larghezza dello schermo è inferiore a 768px. Viene utilizzata per adattare il layout e le funzionalità della pagina in base al dispositivo dell'utente (mobile vs desktop)
   const isMobile = useMediaQuery('(max-width: 768px)');
   
-  // suggestedChefs: lista degli chef consigliati da mostrare di default
-    // page: numero della pagina per la paginazione degli chef consigliati
-    // isLast: booleano che indica se abbiamo raggiunto l'ultima pagina di chef consigliati
-    // filteredRecipes: lista di ricette filtrate per tag, se è null mostriamo gli chef consigliati, altrimenti mostriamo queste ricette
-    // activeTag: tag attualmente attivo per il filtro, usato per evidenziare il badge del tag selezionato
-    // loading: booleano che indica se stiamo caricando i dati iniziali (chef consigliati o ricette filtrate)
-    // loadingMore: booleano che indica se stiamo caricando più chef consigliati per la paginazione
-    // currentUser: dati dell'utente loggato, usati per gestire la logica di follow/unfollow e nascondere il pulsante di follow su se stessi
-
+  // Stati principali per gestire i dati e le interazioni della pagina
+  // suggestedChefs: array che contiene gli chef consigliati da mostrare nella pagina
+  // page: numero della pagina corrente per la paginazione degli chef consigliati
+  // isLast: booleano che indica se siamo arrivati all'ultima pagina di chef consigliati (per disabilitare il pulsante "Carica Altri")
+  // filteredRecipes: array che contiene le ricette filtrate in base al tag selezionato (null se non c'è un filtro attivo)
+  // activeTag: stringa che rappresenta il tag attualmente selezionato per il filtro (null se non c'è un filtro attivo)
+  // loading: booleano che indica se la pagina sta caricando i dati iniziali
+  // loadingMore: booleano che indica se stiamo caricando più chef consigliati (per mostrare un indicatore di caricamento nel pulsante "Carica Altri")
+  // currentUser: oggetto che rappresenta l'utente attualmente loggato, recuperato dal localStorage
+  // searchQuery: stringa che contiene il testo inserito nella barra di ricerca (per dispositivi mobili)
+  // searchResults: array che contiene le ricette risultanti dalla ricerca (null se non c'è una ricerca attiva)
+  // isSearching: booleano che indica se stiamo eseguendo una ricerca (per mostrare un indicatore di caricamento durante la ricerca)
   const [suggestedChefs, setSuggestedChefs] = useState([]);
   const [page, setPage] = useState(0);
   const [isLast, setIsLast] = useState(false);
@@ -37,10 +43,13 @@ const ExplorePage = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  const popularTags = ["Sicilia", "Tradizione", "Pasta", "Dolci", "Veloce", "Pesce", "Vegano"];
+const popularTags = [
+  "Tradizione", "Gourmet","Vegan","Carne","Puglia","Dolci","Tecnica","Veloce"
+];
 
   useEffect(() => {
-    // Al caricamento della pagina, recupero l'utente loggato dal localStorage per gestire la logica di follow/unfollow e mostrare i dati corretti. Poi carico i primi chef consigliati.
+    // Recupera l'utente dal localStorage e verifica se è valido
+    // Se non è valido, rimetti null per evitare errori di parsing
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -52,9 +61,29 @@ const ExplorePage = () => {
     fetchExploreData(0, false);
   }, []);
 
+  // Funzione per recuperare i conteggi dei Like reali
+  // Enrichment dei risultati di ricerca e tag con i Like
+  // Funzionamento: dopo aver ottenuto le ricette, facciamo una chiamata parallela per ottenere i conteggi dei Like e poi uniamo i dati prima di aggiornare lo stato
+  const enrichRecipesWithLikes = async (recipes) => {
+    if (!recipes || recipes.length === 0) return recipes;
+    try {
+      const ids = recipes.map(r => r.id).join(',');
+      const likesRes = await api.get(`/likes/counts?recipeIds=${ids}`);
+      const likesMap = likesRes.data;
+      return recipes.map(r => ({
+        ...r,
+        likesCount: likesMap[r.id] || 0
+      }));
+    } catch (error) {
+      console.error("Errore recupero likes:", error);
+      return recipes;
+    }
+  };
+
+  // Logica di ricerca con arricchimento Like
+  // Funzionamento: quando searchQuery cambia, facciamo una chiamata per cercare le ricette. Se otteniamo risultati, facciamo una seconda chiamata per ottenere i Like e poi uniamo i dati prima di aggiornare lo stato dei risultati di ricerca
   useEffect(() => {
     const searchRecipes = async () => {
-        // Se la query è vuota o troppo corta, resetto i risultati e non faccio la chiamata al server per evitare di sovraccaricare il backend con richieste inutili. Altrimenti, imposto lo stato di ricerca in corso, resetto eventuali filtri attivi e faccio la chiamata al server per cercare le ricette che corrispondono alla query. Al termine, aggiorno i risultati o mostro un messaggio di errore se la chiamata fallisce.
       if (searchQuery.trim().length < 2) {
         setSearchResults(null);
         return;
@@ -66,7 +95,8 @@ const ExplorePage = () => {
 
       try {
         const response = await api.get(`/recipes/search?titolo=${searchQuery}`);
-        setSearchResults(response.data);
+        const enriched = await enrichRecipesWithLikes(response.data);
+        setSearchResults(enriched);
       } catch (error) {
         console.error("Errore durante la ricerca", error);
       } finally {
@@ -81,7 +111,9 @@ const ExplorePage = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  // Funzione per caricare i dati degli chef consigliati. Accetta il numero di pagina da caricare e un booleano isAppend che indica se aggiungere i nuovi chef alla lista esistente (true) o sovrascriverla (false). Imposta lo stato di caricamento appropriato, fa la chiamata al server per ottenere gli chef consigliati per la pagina richiesta, aggiorna lo stato con i nuovi chef e gestisce eventuali errori. Al termine, resetta lo stato di caricamento.
+  // Funzione per caricare più chef consigliati (paginazione)
+  // Funzionamento: quando l'utente clicca su "Carica Altri", incrementiamo la pagina e chiamiamo fetchExploreData con isAppend=true per aggiungere i nuovi chef alla lista esistente invece di sovrascriverla
+  // isAppend è un flag che indica se stiamo caricando la prima pagina (false) o pagine successive (true). In base a questo, aggiorniamo lo stato dei chef consigliati aggiungendo i nuovi risultati invece di sovrascriverli
   const fetchExploreData = async (pageNumber, isAppend = false) => {
     if (isAppend) setLoadingMore(true);
     else setLoading(true);
@@ -99,14 +131,8 @@ const ExplorePage = () => {
     }
   };
 
-  // Funzione per gestire il click sul pulsante "Carica Altri" nella sezione degli chef consigliati. Incrementa il numero di pagina e chiama la funzione di fetch con isAppend=true per aggiungere i nuovi chef alla lista esistente invece di sovrascriverla.
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchExploreData(nextPage, true);
-  };
-
-  // Funzione per gestire il click sul pulsante di follow/unfollow accanto a ogni chef consigliato. Invia una richiesta al server per seguire o smettere di seguire lo chef, poi aggiorna lo stato degli chef consigliati per riflettere il nuovo stato di follow e mostra una notifica di successo o errore a seconda dell'esito dell'operazione.
+  // Funzione per seguire o smettere di seguire uno chef
+  // Funzionamento: quando l'utente clicca su "Segui" o "Seguito", facciamo una chiamata per aggiornare lo stato di follow. Se la chiamata ha successo, aggiorniamo lo stato dei chef consigliati per riflettere il nuovo stato di follow e mostriamo una notifica di conferma
   const handleFollow = async (chefId, currentState) => {
     try {
       await api.post(`/social/follow/${chefId}`);
@@ -123,7 +149,8 @@ const ExplorePage = () => {
     }
   };
 
-  // Funzione per gestire il click su un tag nella sezione "Tendenze del momento". Se il tag cliccato è già attivo, disattiva il filtro e mostra di nuovo gli chef consigliati. Altrimenti, imposta il tag come attivo, mostra lo stato di caricamento e fa una chiamata al server per ottenere le ricette associate a quel tag. Al termine, aggiorna lo stato con le ricette filtrate o mostra un messaggio di errore se la chiamata fallisce.
+  // Funzione per filtrare le ricette in base al tag selezionato
+  // Funzionamento: quando l'utente clicca su un tag, facciamo una chiamata per ottenere le ricette associate a quel tag. Se l'utente clicca di nuovo sullo stesso tag, rimuoviamo il filtro e mostriamo di nuovo i chef consigliati
   const handleTagClick = async (tag) => {
     setSearchQuery('');
     setSearchResults(null);
@@ -136,13 +163,117 @@ const ExplorePage = () => {
     setLoading(true);
     try {
       const res = await api.get(`/recipes/tag/${tag}`);
-      setFilteredRecipes(res.data);
+      const enriched = await enrichRecipesWithLikes(res.data);
+      setFilteredRecipes(enriched);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
+  // Funzione per caricare più chef consigliati (paginazione)
+  // Funzionamento: quando l'utente clicca su "Carica Altri", incrementiamo la pagina e chiamiamo fetchExploreData con isAppend=true per aggiungere i nuovi chef alla lista esistente invece di sovrascriverla
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchExploreData(nextPage, true);
+  };
+
+  // Componente Card per visualizzare le ricette nei risultati di ricerca e nei filtri per tag
+  const RecipeCard = ({ recipe }) => (
+    <Card 
+      shadow="sm" 
+      radius="xl" 
+      padding="0"
+      withBorder={false}
+      style={{ 
+        cursor: 'pointer', 
+        transition: 'all 0.3s ease',
+        backgroundColor: '#fff',
+        overflow: 'hidden'
+      }} 
+      onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-8px)';
+          e.currentTarget.style.boxShadow = 'var(--mantine-shadow-md)';
+      }}
+      onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'var(--mantine-shadow-sm)';
+      }}
+      onClick={() => navigate(`/recipes/${recipe.id}`)}
+    >
+      <Card.Section pos="relative">
+        <Image 
+          src={recipe.imageURL || "https://placehold.co/600x400?text=Heritage+Kitchen"} 
+          height={200} 
+          alt={recipe.titolo} 
+          fallbackSrc="https://placehold.co/600x400?text=Ricetta"
+        />
+        
+        {recipe.parentRecipe && (
+          <Badge 
+            pos="absolute" top={15} right={15} 
+            color="teal.8" variant="filled" 
+            radius="sm" leftSection={<GitFork size={12}/>}
+          >
+            Variante
+          </Badge>
+        )}
+
+        <Badge 
+          pos="absolute" bottom={15} left={15} 
+          color="dark.6" variant="filled" radius="sm"
+          leftSection={<Clock size={12} />}
+          style={{ opacity: 0.9 }}
+        >
+          {recipe.tempoPrep || 30} min
+        </Badge>
+      </Card.Section>
+
+      <Box p="lg">
+        <Text fw={850} size="lg" className="line-clamp-1" mb={12}>
+          {recipe.titolo}
+        </Text>
+
+        <Group justify="space-between" align="center">
+          <Group gap={8}>
+            <Avatar src={recipe.user?.avatar} size="24px" radius="xl" color="orange" />
+            <Text size="xs" fw={700} c="gray.7">@{recipe.user?.username}</Text>
+          </Group>
+          
+          <Badge color="orange.1" c="orange.9" variant="filled" size="sm" radius="sm">
+             {recipe.difficolta}
+          </Badge>
+        </Group>
+
+        <Group justify="flex-end" mt="md">
+          <Paper 
+            withBorder 
+            radius="lg" 
+            px={10} 
+            h={30} 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              borderColor: '#f1f3f5',
+              backgroundColor: '#fff'
+            }}
+          >
+            <Heart 
+              size={14} 
+              color={recipe.likesCount > 0 ? "var(--mantine-color-red-6)" : "var(--mantine-color-gray-5)"} 
+              fill={recipe.likesCount > 0 ? "var(--mantine-color-red-6)" : "transparent"} 
+            />
+            <Text fw={800} size="xs" c={recipe.likesCount > 0 ? "red.8" : "dimmed"}>
+              {recipe.likesCount || 0}
+            </Text>
+          </Paper>
+        </Group>
+      </Box>
+    </Card>
+  );
 
   if (loading && page === 0) return <Center h="80vh"><Loader color="orange" size="xl" variant="bars" /></Center>;
 
@@ -173,6 +304,7 @@ const ExplorePage = () => {
         )}
       </Stack>
 
+      {/* SEZIONE TAG */}
       <Box mb={50}>
         <Group justify="space-between" align="center" mb="md">
             <Text fw={700} size="sm" tt="uppercase" lts={1} c="orange">Tendenze del momento</Text>
@@ -208,49 +340,18 @@ const ExplorePage = () => {
         labelPosition="center" 
       />
 
-      {/* 1. RISULTATI RICERCA TESTUALE */}
-      {searchResults ? (
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" mt="xl">
-          {searchResults.map(rec => (
-            <Paper key={rec.id} withBorder radius="md" p="0" style={{cursor: 'pointer', overflow: 'hidden'}} onClick={() => navigate(`/recipes/${rec.id}`)}>
-               <AspectRatio ratio={16 / 9} pos="relative">
-                 <img src={rec.imageURL || "https://placehold.co/600x400"} style={{objectFit: 'cover'}} alt={rec.titolo} />
-                 {rec.parentRecipe && (
-                    <Badge pos="absolute" top={10} right={10} color="teal" variant="filled" leftSection={<GitFork size={12}/>}>
-                      Variante
-                    </Badge>
-                 )}
-               </AspectRatio>
-               <Box p="md">
-                 <Text fw={700}>{rec.titolo}</Text>
-                 <Text size="xs" c="dimmed">di {rec.user?.username}</Text>
-               </Box>
-            </Paper>
+      {/* VISUALIZZAZIONE RISULTATI (SEARCH O TAG) */}
+      {(searchResults || filteredRecipes) ? (
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl" mt="xl">
+          {(searchResults || filteredRecipes).map(rec => (
+            <RecipeCard key={rec.id} recipe={rec} />
           ))}
-          {searchResults.length === 0 && <Text ta="center" w="100%" py="xl" c="dimmed">Nessun risultato trovato.</Text>}
-        </SimpleGrid>
-      ) : filteredRecipes ? (
-        /* 2. RICETTE PER TAG */
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" mt="xl">
-          {filteredRecipes.map(rec => (
-            <Paper key={rec.id} withBorder radius="md" p="0" style={{cursor: 'pointer', overflow: 'hidden'}} onClick={() => navigate(`/recipes/${rec.id}`)}>
-               <AspectRatio ratio={16 / 9} pos="relative">
-                 <img src={rec.imageURL || "https://placehold.co/600x400"} style={{objectFit: 'cover'}} alt={rec.titolo}/>
-                 {rec.parentRecipe && (
-                    <Badge pos="absolute" top={10} right={10} color="teal" variant="filled" leftSection={<GitFork size={12}/>}>
-                      Variante
-                    </Badge>
-                 )}
-               </AspectRatio>
-               <Box p="md">
-                 <Text fw={700}>{rec.titolo}</Text>
-                 <Text size="xs" c="dimmed">di {rec.user?.username}</Text>
-               </Box>
-            </Paper>
-          ))}
+          {((searchResults || filteredRecipes).length === 0) && (
+            <Text ta="center" w="100%" py="xl" c="dimmed">Nessuna ricetta trovata.</Text>
+          )}
         </SimpleGrid>
       ) : (
-        /* 3. CHEF CONSIGLIATI (DEFAULT) */
+        /* CHEF CONSIGLIATI (DEFAULT) */
         <Stack gap={50} mt="xl">
           {suggestedChefs.map(chef => (
             <Paper key={chef.id} withBorder radius="lg" p="lg" shadow="sm">
@@ -286,20 +387,19 @@ const ExplorePage = () => {
 
               <SimpleGrid cols={3} spacing="md">
                 {chef.recipes?.map(rec => (
-                  <AspectRatio ratio={1 / 1} key={rec.id}>
-                    <Box 
-                      pos="relative"
-                      style={{ cursor: 'pointer', borderRadius: '12px', overflow: 'hidden' }}
-                      onClick={() => navigate(`/recipes/${rec.id}`)}
-                    >
-                      <img src={rec.imageURL || "https://placehold.co/300x300"} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={rec.titolo} />
-                      {rec.parentRecipe && (
-                        <Badge pos="absolute" top={5} right={5} color="teal" variant="filled" size="xs">
-                           <GitFork size={10}/>
-                        </Badge>
-                      )}
-                    </Box>
-                  </AspectRatio>
+                   <Box 
+                    key={rec.id}
+                    pos="relative"
+                    style={{ cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', height: '100px' }}
+                    onClick={() => navigate(`/recipes/${rec.id}`)}
+                  >
+                    <Image src={rec.imageURL || "https://placehold.co/300x300"} h="100%" w="100%" fit="cover" alt={rec.titolo} />
+                    {rec.parentRecipe && (
+                      <Badge pos="absolute" top={5} right={5} color="teal" variant="filled" size="xs">
+                         <GitFork size={10}/>
+                      </Badge>
+                    )}
+                  </Box>
                 ))}
               </SimpleGrid>
             </Paper>

@@ -28,6 +28,7 @@ const ProfilePage = () => {
     if (currentUser) {
       fetchData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {
@@ -69,6 +70,7 @@ const ProfilePage = () => {
       localStorage.setItem('user', JSON.stringify(userInStorage));
       notifications.show({ title: 'Successo', message: 'Foto profilo aggiornata!', color: 'green' });
       setNewAvatar(null);
+          // eslint-disable-next-line no-unused-vars
     } catch (err) {
       notifications.show({ title: 'Errore', message: 'Errore durante l\'upload', color: 'red' });
     } finally {
@@ -82,6 +84,7 @@ const ProfilePage = () => {
       setProfileData({ ...profileData, bio: newBio });
       notifications.show({ message: "Bio aggiornata con successo!", color: "green" });
       close();
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       notifications.show({ message: "Errore nel salvataggio bio", color: "red" });
     }
@@ -100,6 +103,7 @@ const ProfilePage = () => {
           await api.delete(`/user/${currentUser.id}`);
           localStorage.clear();
           navigate('/login');
+              // eslint-disable-next-line no-unused-vars
         } catch (err) {
           notifications.show({ title: 'Errore', message: 'Impossibile eliminare il profilo.', color: 'red' });
         }
