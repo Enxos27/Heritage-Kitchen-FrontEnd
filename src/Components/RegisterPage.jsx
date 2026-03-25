@@ -3,7 +3,7 @@ import { TextInput, PasswordInput, Button, Paper, Title, Container, Text, Anchor
 import { useNavigate, Link } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { AtSign, User, Lock, BookText } from 'lucide-react';
-import axios from 'axios';
+import api from '../Service/api';
 import logoImg from '../assets/logo_heritage_kitchen.png';
 
 const Register = () => {
@@ -18,7 +18,7 @@ const Register = () => {
 
   const handleSubmit = async (values) => {
     try {
-      await axios.post('http://localhost:8080/user/register', values);
+      await api.post("/user/register", values);
       notifications.show({ 
         title: 'Benvenuto!', 
         message: 'Il tuo ricettario personale ti aspetta. Accedi ora.', 
