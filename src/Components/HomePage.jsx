@@ -18,6 +18,14 @@ const Home = () => {
 
   const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem('user'));
+  const token = localStorage.getItem('token');
+
+  // 2. CONTROLLO ACCESSO IMMEDIATO
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+    }
+  }, [token, navigate]);
 
   const fetchSuggestions = async () => {
     try {
