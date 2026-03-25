@@ -2,7 +2,7 @@ import axios from "axios";
 // Creo un'istanza di axios con la baseURL del backend per semplificare le chiamate API
 
 const api = axios.create({
-  baseURL: "http://localhost:8080", // L'indirizzo del backend Spring Boot
+  baseURL: "https://zygomorphic-letty-heritage-kitchen-85ae0973.koyeb.app", // L'indirizzo del backend Spring Boot
 });
 
 // Questo "interceptor" aggiunge il token a ogni chiamata automaticamente
